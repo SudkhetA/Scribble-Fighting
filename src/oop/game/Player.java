@@ -114,6 +114,11 @@ public class Player {
             arrowX = arrowXMax;
             arrowDx = 0;
         }
+
+        // Prevent character out of area
+        if (y < Background.MIN_Y + 10) {
+            y = Background.MIN_Y + 10;
+        }
     }
 
     public void render(Graphics g) {

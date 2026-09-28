@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 public class GamePanel extends JPanel implements Runnable , KeyListener {
     public static final int WIDTH = 800;
-    public static final int HEIGHT = 300;
+    public static final int HEIGHT = 450;
 
     private Thread thread;
     private final int FPS = 30;
@@ -24,6 +24,7 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
     private int score;
     private final String HI_SCORE_FILE = "scores.txt";
 
+    public static Background background;
     public static Player player;
     public static ArrayList<Arrow> arrows;
     public static ArrayList<Enemy> enemies;
@@ -39,6 +40,8 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
     public void run() {
         image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
         g = (Graphics2D)image.getGraphics();
+
+        background = new  Background();
 
         player = new Player();
 
@@ -120,6 +123,8 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
             g.setFont(new Font("Century Gothic", Font.PLAIN, 14));
             g.drawString("Score : " + score, 10, 20);
 
+            background.render(g);
+
             player.render(g);
 
             // Bullet render.
@@ -194,8 +199,8 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
         if (elapsed > createDelay) {
             int y = (int)(Math.random() * HEIGHT);
 
-            if (y < 10) { // 10 px margin is reserved above the character for the HP bar
-                y = 10;
+            if (y < Background.MIN_Y + 10) { // 160 px margin is reserved above the character for background
+                y = Background.MIN_Y + 10;
             } else if (y > HEIGHT - 64) { // 64 is the character height; keep the whole character inside the screen
                 y = HEIGHT - 64;
             }
@@ -265,7 +270,7 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
     private void getHiScore() {
         File file = new File(HI_SCORE_FILE);
         try(BufferedReader buffReader = new BufferedReader(new FileReader(file))) {
-            String value[] = buffReader.readLine().split(":");
+            String[] value = buffReader.readLine().split(":");
             hiScore = Integer.parseInt(value[1]);
         } catch (Exception e) {
             e.printStackTrace();
