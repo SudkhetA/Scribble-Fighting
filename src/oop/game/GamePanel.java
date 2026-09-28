@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.ArrayList;
 
 public class GamePanel extends JPanel implements Runnable , KeyListener {
@@ -17,6 +18,11 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
     private BufferedImage image;
     private Graphics2D g;
     private long createTimer, createDelay;
+
+    private boolean inGame;
+    private long hiScore;
+    private int score;
+    private final String HI_SCORE_FILE = "scores.txt";
 
     public static Player player;
     public static ArrayList<Arrow> arrows;
@@ -74,6 +80,8 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
             thread.start();
         }
         addKeyListener(this);
+        score = 0;
+        inGame = true;
     }
 
     private void gameUpdate() {
@@ -100,22 +108,31 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
 
         // Collision Detection.
         checkArrowCollideEnemy();
+        checkPlayerCollideEnemy();
     }
 
     private void gameRender() {
-        g.setColor(Color.white);
-        g.fillRect(0, 0, WIDTH, HEIGHT);
+        if (inGame) {
+            g.setColor(Color.white);
+            g.fillRect(0, 0, WIDTH, HEIGHT);
 
-        player.render(g);
+            g.setColor(Color.black);
+            g.setFont(new Font("Century Gothic", Font.PLAIN, 14));
+            g.drawString("Score : " + score, 10, 20);
 
-        // Bullet render.
-        for (int i = 0; i < arrows.size(); i++) {
-            arrows.get(i).render(g);
-        }
+            player.render(g);
 
-        // Enmemy render.
-        for (int i = 0; i < enemies.size(); i++) {
-            enemies.get(i).render(g);
+            // Bullet render.
+            for (int i = 0; i < arrows.size(); i++) {
+                arrows.get(i).render(g);
+            }
+
+            // Enmemy render.
+            for (int i = 0; i < enemies.size(); i++) {
+                enemies.get(i).render(g);
+            }
+        } else {
+            drawGameOverScreen();
         }
     }
 
@@ -160,7 +177,15 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
         }
 
         if (keyCode == KeyEvent.VK_SPACE) {
-            player.setFiring(false);
+            if (inGame) {
+                player.setFiring(false);
+            } else {
+                player = new Player();
+                score = 0;
+                enemies.clear();
+                inGame = true;
+            }
+
         }
     }
 
@@ -200,9 +225,86 @@ public class GamePanel extends JPanel implements Runnable , KeyListener {
                     if (result) {
                         enemies.remove(j);
                         j--;
+
+                        score++;
                     }
                 }
             }
         }
+    }
+
+    private void checkPlayerCollideEnemy() {
+        Rectangle pRect = player.getBounds();
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy =  enemies.get(i);
+            Rectangle eRect = enemy.getBounds();
+
+            if (pRect.intersects(eRect)) {
+                inGame = false;
+                getHiScore();
+                writeHiScore();
+                getHiScore();
+
+                arrows.clear();
+                enemies.clear();
+            }
+        }
+    }
+
+    private void writeHiScore() {
+        if (score > hiScore) {
+            File file = new File(HI_SCORE_FILE);
+            try(BufferedWriter buffWriter = new BufferedWriter(new FileWriter(file))) {
+                buffWriter.write("HiScore:" + score);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void getHiScore() {
+        File file = new File(HI_SCORE_FILE);
+        try(BufferedReader buffReader = new BufferedReader(new FileReader(file))) {
+            String value[] = buffReader.readLine().split(":");
+            hiScore = Integer.parseInt(value[1]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void drawGameOverScreen() {
+        g.setColor(Color.white);
+        g.fillRect(0, 0, WIDTH, HEIGHT);
+
+        // Scribble Fighting
+        g.setColor(Color.black);
+        g.setFont(new Font("Century Gothic", Font.BOLD, 26));
+        String strSF = "Scribble Fighting";
+        int lengthMIG = (int)g.getFontMetrics().getStringBounds(strSF, g).getWidth();
+        g.drawString(strSF, (WIDTH - lengthMIG) / 2, 40);
+
+        // Game Over
+        g.setFont(new Font("Century Gothic", Font.BOLD, 24));
+        String strGameOver = "Game Over";
+        int lengthGameOver = (int)g.getFontMetrics().getStringBounds(strGameOver, g).getWidth();
+        g.drawString(strGameOver, (WIDTH - lengthGameOver) / 2, 120);
+
+        // High Score
+        g.setFont(new Font("Century Gothic", Font.BOLD, 18));
+        String strHS = "High Score: " + hiScore;
+        int lengthHS = (int)g.getFontMetrics().getStringBounds(strHS, g).getWidth();
+        g.drawString(strHS, (WIDTH - lengthHS) / 2, 150);
+
+        // Score
+        g.setFont(new Font("Century Gothic", Font.BOLD, 18));
+        String strScore = "Score: " + score;
+        int lengthScore = (int)g.getFontMetrics().getStringBounds(strScore, g).getWidth();
+        g.drawString(strScore, (WIDTH - lengthScore) / 2, 180);
+
+        // Press spacebar to replay
+        g.setFont(new Font("Century Gothic", Font.PLAIN, 18));
+        String strReplay = "Press spacebar to replay.";
+        int lengthReplay = (int)g.getFontMetrics().getStringBounds(strReplay, g).getWidth();
+        g.drawString(strReplay, (WIDTH - lengthReplay) / 2, HEIGHT - 20);
     }
 }

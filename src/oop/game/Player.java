@@ -125,4 +125,8 @@ public class Player {
             g2d.drawImage(arrowImage, arrowX, y, null);
         }
     }
+
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, width, height);
+    }
 }
